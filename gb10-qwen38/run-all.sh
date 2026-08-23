@@ -9,6 +9,8 @@
 #   ./run-all.sh                 todo hasta el informe; no cambia de modelo
 #   ./run-all.sh --auto          no pregunta nada (aplica la migracion de configs)
 #   ./run-all.sh --auto --yes-flip   ademas cambia de modelo si el veredicto aprueba
+#   ./run-all.sh --skip-bench    sin medir: descarga, alias, configs y cambio.
+#                                Usa REASONING_EFFORT de models.conf tal cual.
 #   ./run-all.sh --from bench    reanuda desde una fase concreta
 #   ./run-all.sh --status        que fases van hechas
 #   ./run-all.sh --reset         olvida el progreso (no deshace nada)
@@ -23,11 +25,12 @@ STATE=".run-all-state"
 LOG="run-all.log"
 PHASES=(preflight inventory pull tasks bench report verdict init repoint flip)
 
-AUTO=0; YES_FLIP=0; FROM=""; MODE="run"
+AUTO=0; YES_FLIP=0; FROM=""; MODE="run"; SKIP_BENCH=0
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --auto)     AUTO=1 ;;
         --yes-flip) YES_FLIP=1 ;;
+        --skip-bench) SKIP_BENCH=1 ;;
         --from)     FROM="${2:-}"; shift ;;
         --status)   MODE="status" ;;
         --reset)    MODE="reset" ;;
@@ -121,6 +124,20 @@ if ! done_phase pull; then
     mark_phase pull
 fi
 
+# ------------------------------------------- tasks / bench / report / verdict
+if [[ $SKIP_BENCH -eq 1 ]]; then
+    say "4-7/10  Medicion omitida (--skip-bench)"
+    info "Vas al cambio sin medir en tu hardware. Es defendible: los"
+    info "benchmarks publicos independientes respaldan el upgrade y el"
+    info "rollback es un comando. Pero que conste que no se midio."
+    info "Nivel de razonamiento que quedara activo: ${REASONING_EFFORT:-por defecto del runtime (xhigh)}"
+    if [[ -z "${REASONING_EFFORT:-}" ]]; then
+        info "  AVISO: sin REASONING_EFFORT, el 3.8 corre en xhigh y se pasa"
+        info "  de vueltas. Pon REASONING_EFFORT=\"medium\" en models.conf."
+    fi
+    for ph in tasks bench report verdict; do done_phase "$ph" || mark_phase "$ph"; done
+fi
+
 # -------------------------------------------------------------------- tasks
 if ! done_phase tasks; then
     say "4/10  Tareas de evaluacion"
@@ -159,9 +176,11 @@ if ! done_phase verdict; then
     VERDICT=${PIPESTATUS[0]}
     printf '%s\n' "$VERDICT" > .verdict-code
     mark_phase verdict
-else
-    [[ -f .verdict-code ]] && VERDICT="$(cat .verdict-code)"
+elif [[ -f .verdict-code ]]; then
+    VERDICT="$(cat .verdict-code)"
 fi
+# sin medicion no hay veredicto que consultar: --yes-flip manda directamente
+[[ $SKIP_BENCH -eq 1 ]] && VERDICT="0"
 
 # --------------------------------------------------------------------- init
 if ! done_phase init; then
@@ -193,7 +212,10 @@ fi
 say "10/10  Cambio de modelo"
 if [[ "$VERDICT" == "0" && $YES_FLIP -eq 1 ]]; then
     info "veredicto favorable y --yes-flip: cambiando."
-    ./02-switch-model.sh 2>&1 | tee -a "$LOG" || fail flip "no se pudo cambiar."
+    FLIP_ARGS=()
+    [[ $SKIP_BENCH -eq 1 ]] && FLIP_ARGS+=(--skip-ab-check)
+    ./02-switch-model.sh "${FLIP_ARGS[@]}" 2>&1 | tee -a "$LOG" \
+        || fail flip "no se pudo cambiar."
     mark_phase flip
     say "MIGRACION COMPLETA"
     info "rollback en cualquier momento:  ./02-switch-model.sh --rollback"
@@ -204,10 +226,16 @@ else
         *) info "Sin recomendacion automatica: decidelo tu." ;;
     esac
     echo
-    info "PARADA DELIBERADA. Antes del ultimo paso, mira el informe:"
-    info "    $(pwd)/ab-report.html"
-    echo
-    info "Compara las respuestas lado a lado. Si el nuevo es al menos igual"
-    info "de bueno, aplica el cambio con:"
-    info "    ./02-switch-model.sh"
+    if [[ $SKIP_BENCH -eq 1 ]]; then
+        info "PARADA DELIBERADA. Todo esta listo; falta solo el cambio:"
+        info "    ./02-switch-model.sh"
+        info "(no habra aviso de A/B: se omitio la medicion a proposito)"
+    else
+        info "PARADA DELIBERADA. Antes del ultimo paso, mira el informe:"
+        info "    $(pwd)/ab-report.html"
+        echo
+        info "Compara las respuestas lado a lado. Si el nuevo es al menos igual"
+        info "de bueno, aplica el cambio con:"
+        info "    ./02-switch-model.sh"
+    fi
 fi

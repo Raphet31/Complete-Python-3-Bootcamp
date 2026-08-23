@@ -103,7 +103,14 @@ deliberadamente antes de cambiar de modelo** para que mires el informe; el
 ./run-all.sh --auto --yes-flip   # y cambia de modelo si el veredicto aprueba
 ./run-all.sh --status        # qué fases van hechas
 ./run-all.sh --from bench    # reanuda desde una fase
+./run-all.sh --auto --skip-bench --yes-flip   # sin medir, migración completa
 ```
+
+La última variante hace la migración entera sin medir en tu hardware: descarga,
+alias, configs y cambio. Es defendible cuando confías en la evidencia pública
+—que en este caso es independiente y contundente— y sabes que el rollback es un
+comando. Usa el `REASONING_EFFORT` de `models.conf` tal cual, así que
+asegúrate de que dice `medium`.
 
 Lo único que conviene hacer a mano: sustituir `mis-tareas.txt` por tus tareas
 reales y reejecutar `./run-all.sh --from bench`. El script lo crea a partir del

@@ -15,6 +15,8 @@
 #       ./02-switch-model.sh --rollback   repunta alias -> OLD_MODEL
 #       ./02-switch-model.sh --status     solo muestra a que apunta hoy
 #       ./02-switch-model.sh --dry-run    enseña que haria, sin hacerlo
+#       ./02-switch-model.sh --skip-ab-check  no exigir A/B previo (para cuando
+#                                         se omitio la medicion a proposito)
 
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -24,12 +26,14 @@ source ./models.conf
 STATE_FILE=".alias-state"
 MODE="switch"
 DRY=0
+SKIP_AB=0
 for arg in "$@"; do
     case "$arg" in
         --init)     MODE="init" ;;
         --rollback) MODE="rollback" ;;
         --status)   MODE="status" ;;
         --dry-run)  DRY=1 ;;
+        --skip-ab-check) SKIP_AB=1 ;;
         *) echo "Argumento desconocido: $arg" >&2; exit 2 ;;
     esac
 done
@@ -84,7 +88,7 @@ model_exists "$DEST" || {
 }
 
 # --- Aviso si no se midio nada -------------------------------------------
-if [[ $DRY -eq 0 && "$MODE" == "switch" && ! -f "ab-results.json" ]]; then
+if [[ $DRY -eq 0 && $SKIP_AB -eq 0 && "$MODE" == "switch" && ! -f "ab-results.json" ]]; then
     echo
     echo "AVISO: no encuentro ab-results.json, o sea que no corriste el A/B."
     echo "Los benchmarks publicos respaldan el upgrade (+14 en el indice de"
