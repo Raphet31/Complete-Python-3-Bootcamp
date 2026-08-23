@@ -80,25 +80,39 @@ def build_html(d):
     ra, rb = d["results"].get(a, []), d["results"].get(b, [])
     mem = d.get("resident_mb", {}) or {}
 
-    rows = []
+    # Tabla de rendimiento: una fila por variante, para que el barrido de
+    # reasoning_effort se vea entero y no solo A contra B.
+    variants = d.get("variants") or [{"label": a}, {"label": b}]
+    labels = [v["label"] for v in variants if v["label"] in d["results"]]
     metrics = [("wall_p50", "Latencia p50", "s", "lower"),
                ("wall_p95", "Latencia p95", "s", "lower"),
                ("tps_p50", "Throughput p50", " tok/s", "higher"),
-               ("ttft_p50", "Prefill p50", "s", "lower")]
-    for key, label, suf, better in metrics:
-        va, vb = med(ra, key), med(rb, key)
-        cls_a = cls_b = ""
-        if isinstance(va, (int, float)) and isinstance(vb, (int, float)):
-            a_wins = va < vb if better == "lower" else va > vb
-            cls_a, cls_b = ("win", "") if a_wins else ("", "win")
-        rows.append(f"<tr><td>{esc(label)}</td>"
-                    f"<td class='num {cls_a}'>{fmt(va, suf)}</td>"
-                    f"<td class='num {cls_b}'>{fmt(vb, suf)}</td></tr>")
+               ("ttft_p50", "Prefill p50", "s", "lower"),
+               ("output_tokens_p50", "Tokens generados", "", "lower")]
 
-    ma, mb = mem.get(a), mem.get(b)
-    rows.append("<tr><td>Memoria residente</td>"
-                f"<td class='num'>{f'{ma / 1024:.1f} GB' if ma else '—'}</td>"
-                f"<td class='num'>{f'{mb / 1024:.1f} GB' if mb else '—'}</td></tr>")
+    head = "".join(f"<th style='text-align:right'>{esc(lb)}</th>" for lb in labels)
+    rows = []
+    for key, label, suf, better in metrics:
+        vals = {lb: med(d["results"][lb], key) for lb in labels}
+        nums = [v for v in vals.values() if isinstance(v, (int, float))]
+        best = (min(nums) if better == "lower" else max(nums)) if nums else None
+        cells = "".join(
+            f"<td class='num {'win' if vals[lb] == best else ''}'>"
+            f"{fmt(vals[lb], suf)}</td>" for lb in labels)
+        rows.append(f"<tr><td>{esc(label)}</td>{cells}</tr>")
+
+    mem = d.get("resident_mb", {}) or {}
+    cells = "".join(
+        f"<td class='num'>{f'{mem[lb] / 1024:.1f} GB' if mem.get(lb) else '—'}</td>"
+        for lb in labels)
+    rows.append(f"<tr><td>Memoria residente</td>{cells}</tr>")
+
+    sweep_note = ("<div class='note'><strong>Sobre el barrido de razonamiento.</strong> "
+                  "La fila <em>Tokens generados</em> es la que explica el coste de "
+                  "<code>xhigh</code>: son tokens de razonamiento que pagas en tiempo "
+                  "y nunca ves. Si <code>medium</code> da una respuesta igual de buena "
+                  "en una fracción del tiempo, ese es tu punto de operación."
+                  "</div>") if d.get("sweep_effort") else ""
 
     blocks = []
     by_b = {e["prompt_index"]: e for e in rb}
@@ -133,13 +147,16 @@ def build_html(d):
 <h1>Comparativa A/B</h1>
 <p class="sub">{esc(d.get('generated_at', ''))} · {len(ra)} tarea(s) ·
 {esc(d.get('runs_per_prompt'))} medida(s) por tarea ·
-warm-up {esc(d.get('warmup', 0))} · concurrencia {esc(d.get('concurrency', 1))}</p>
+warm-up {esc(d.get('warmup', 0))} · concurrencia {esc(d.get('concurrency', 1))}
+{'· barrido de razonamiento' if d.get('sweep_effort')
+ else ('· razonamiento ' + esc(d['reasoning_effort'])) if d.get('reasoning_effort')
+ else '· razonamiento por defecto'}</p>
 {err_note}
 <h2>Rendimiento</h2>
-<table><thead><tr><th>Métrica</th>
-<th style="text-align:right">A · {esc(a)}</th>
-<th style="text-align:right">B · {esc(b)}</th></tr></thead>
-<tbody>{''.join(rows)}</tbody></table>
+<div style="overflow-x:auto">
+<table><thead><tr><th>Métrica</th>{head}</tr></thead>
+<tbody>{''.join(rows)}</tbody></table></div>
+{sweep_note}
 <div class="note">La tabla decide la <strong>velocidad</strong>. La
 <strong>calidad</strong> la decides tú abajo: misma tarea, las dos respuestas
 lado a lado. Si el nuevo no gana claramente en tus tareas, no cambies.</div>

@@ -7,31 +7,63 @@ Los scripts corren **en la GB10**, no aquí. Este repo solo los versiona.
 
 ---
 
-## Antes de empezar: dos cosas que conviene saber
+## Qué dicen los benchmarks públicos
 
-**1. Los 14 puntos son de otro modelo.**
-Los benchmarks que circulan de "Qwen 3.8" son del **Qwen3.8-Max**: 2.4 billones
-de parámetros (MoE, ~95B activos), contexto de 1M. Ese modelo **no cabe en la
-GB10** — el techo del DGX Spark son 128GB unificados, unos ~200B parámetros con
-cuantización agresiva. El Max está ~12× por encima.
+Verificado en fuentes independientes, agosto 2026. Los dos son **27B densos,
+misma arquitectura** (64 capas, Gated DeltaNet híbrido + atención), mismo
+tamaño en disco (~17GB Q4_K_M), mismo contexto (256K). Es un reemplazo directo.
 
-El que sí corre aquí es el **27B denso**, que es un modelo distinto y no es el
-que sacó esos números.
+**Artificial Analysis Intelligence Index** (tercero independiente, no Alibaba):
 
-**2. Los números son de primera parte.**
-A agosto de 2026, los scores publicados salen de la tabla de la propia Alibaba;
-Artificial Analysis y los leaderboards de la comunidad todavía no lo habían
-medido de forma independiente. Y en lo publicado, el Max **pierde** en varios
-ejes: SWE-bench Pro 67.7 (12 puntos por debajo de Fable 5), HLE 43.6 (último
-entre los cuatro flagships), #6 de 224 en BenchAlign.
+| Modelo | Score |
+|---|---:|
+| Qwen3.6-27B | 38 |
+| **Qwen3.8-27B** | **52** |
 
-Nada de esto quiere decir que el 27B sea malo — encaja muy bien en el Spark, y
-NVFP4 es formato nativo de Blackwell (~1.5× más rápido que BF16). Solo quiere
-decir que **la decisión hay que tomarla midiendo, no leyendo una tabla**.
+Son los 14 puntos. Y en benchmarks concretos:
 
-Por eso el orden de los scripts pone el A/B *antes* del cambio.
+| Benchmark | 3.6-27B | 3.8-27B |
+|---|---:|---:|
+| Terminal-Bench 2.1 | 63.4 | 73.0 |
+| DeepSWE 1.1 | 13.3 | 42.2 |
+| OSWorld-Verified | 63.9 | 84.3 |
+| SWE-bench Pro | 53.5 | 61.7 |
+| SWE-MM | 25.7 | 38.6 |
+| JobBench | 21.8 | 33.4 |
+
+La arquitectura no cambió: **todo el salto viene del post-entrenamiento**
+(entornos de RL + destilación on-policy). Con 52 queda a 1 punto de DeepSeek V4
+Pro y GLM-5.2, que son mucho más grandes.
+
+En corto: el upgrade está bien respaldado por evidencia independiente. No hace
+falta discutirlo.
+
+## El problema real: `reasoning_effort`
+
+Aquí está el riesgo, y no es el que parecía.
+
+Qwen3.8-27B trae `reasoning_effort` con **`xhigh` por defecto**, y en ese modo
+se pasa de vueltas de forma extrema: en la prueba de Simon Willison quemó
+**22.276 tokens de razonamiento en ~21 minutos** para una sola tarea.
+
+Lo que eso significa para ti: **si haces el A/B con los valores por defecto, el
+3.8 va a parecer catastróficamente más lento que el 3.6**, y no porque lo sea,
+sino porque está razonando en xhigh mientras el 3.6 no. Rechazarías el upgrade
+por un artefacto de configuración.
+
+Los niveles son `low`, `medium` y `xhigh`. `medium` recorta la espera como un
+tercio **sin pérdida de calidad medible**, y es el default nativo del modelo
+(xhigh se inyecta con una frase en el system prompt).
+
+Ojo también: **el 52 de Artificial Analysis está medido en `xhigh`.** Si corres
+en `medium` estás en otro punto de operación — más rápido, y probablemente algo
+por debajo de ese 52.
+
+Por eso `03-ab-eval.py` acepta `--reasoning-effort` y `--sweep-effort`: mide los
+tres niveles para que elijas el punto de operación con datos, no por defecto.
 
 ---
+
 
 ## La idea central: un alias, no N configs
 
@@ -73,8 +105,10 @@ a la vez. Si algo se rompe, sabes cuál de las dos fue.
 # --- Fase 3: medir ANTES de decidir ------------------------------------
 cp tareas-ejemplo.txt mis-tareas.txt
 $EDITOR mis-tareas.txt          # pon tus tareas reales
-./03-ab-eval.py --prompts mis-tareas.txt --runs 5
-./03-ab-eval.py --prompts mis-tareas.txt --concurrency 4   # bajo carga
+./03-ab-eval.py --prompts mis-tareas.txt --runs 5 --sweep-effort
+#   ^ IMPRESCINDIBLE la primera vez: mide low/medium/xhigh. Sin esto el 3.8
+#     corre en xhigh y parece mucho mas lento de lo que realmente es.
+./03-ab-eval.py --prompts mis-tareas.txt --reasoning-effort medium --concurrency 4
 ./05-report.py                  # comparativa lado a lado -> ab-report.html
 
 # --- Fase 4: introducir el alias SIN cambiar comportamiento -------------

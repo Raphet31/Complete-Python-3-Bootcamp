@@ -87,9 +87,10 @@ model_exists "$DEST" || {
 if [[ $DRY -eq 0 && "$MODE" == "switch" && ! -f "ab-results.json" ]]; then
     echo
     echo "AVISO: no encuentro ab-results.json, o sea que no corriste el A/B."
-    echo "Los 14 puntos de la tabla publica son del Qwen3.8-MAX (2.4T params),"
-    echo "no de este 27B, y salen de la tabla de la propia Alibaba."
-    echo "Cambiar sin medir es cambiar a ciegas."
+    echo "Los benchmarks publicos respaldan el upgrade (+14 en el indice de"
+    echo "Artificial Analysis, 38 -> 52), pero OJO con reasoning_effort: el 3.8"
+    echo "viene en 'xhigh' por defecto y se pasa de vueltas. Sin medir, no sabes"
+    echo "en que nivel te conviene correrlo ni cuanto cuesta en tu hardware."
     echo
     read -rp "Continuar de todos modos? [y/N] " ok
     [[ "$ok" == "y" || "$ok" == "Y" ]] || { echo "Abortado. Corre ./03-ab-eval.py primero."; exit 1; }

@@ -78,9 +78,27 @@ def load_prompts(path):
     return cleaned
 
 
-def generate(host, model, prompt, timeout):
+# Qwen3.8 fue post-entrenado con estas frases; 'medium' es el default nativo
+# del modelo y no inyecta nada. Se usan cuando el runtime no acepta el campo
+# reasoning_effort de la API (--effort-via-system).
+EFFORT_SYSTEM = {
+    "low": "Reasoning effort is set to low. Answer directly with minimal deliberation.",
+    "medium": "",
+    "xhigh": "Reasoning effort is set to xhigh. Please think carefully before answering.",
+}
+
+
+def generate(host, model, prompt, timeout, effort=None, via_system=False):
     """Una llamada a /api/generate. Devuelve (metricas, error)."""
-    body = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode()
+    payload = {"model": model, "prompt": prompt, "stream": False}
+    if effort:
+        if via_system:
+            sys_msg = EFFORT_SYSTEM.get(effort, "")
+            if sys_msg:
+                payload["system"] = sys_msg
+        else:
+            payload["reasoning_effort"] = effort
+    body = json.dumps(payload).encode()
     req = urllib.request.Request(
         f"{host}/api/generate", data=body,
         headers={"Content-Type": "application/json"},
@@ -170,6 +188,17 @@ def main():
                     help="corridas descartadas antes de medir (carga del modelo)")
     ap.add_argument("--concurrency", type=int, default=1,
                     help="peticiones simultaneas; >1 mide degradacion bajo carga")
+    ap.add_argument("--reasoning-effort", choices=["low", "medium", "xhigh"],
+                    default=(conf.get("REASONING_EFFORT") or None),
+                    help="nivel de razonamiento para el modelo A. Qwen3.8 viene en "
+                         "xhigh por defecto y se pasa de vueltas; medium suele ser "
+                         "el punto util")
+    ap.add_argument("--sweep-effort", action="store_true",
+                    help="mide el modelo A en low, medium y xhigh para ver la curva "
+                         "coste/beneficio antes de fijar el nivel")
+    ap.add_argument("--effort-via-system", action="store_true",
+                    help="aplica el nivel por system prompt en vez del campo de API "
+                         "(para runtimes que no soportan reasoning_effort)")
     ap.add_argument("--timeout", type=int, default=600)
     ap.add_argument("--host", default=conf.get("OLLAMA_HOST") or "http://localhost:11434")
     args = ap.parse_args()
@@ -181,60 +210,85 @@ def main():
                  "Corre ./00-inventory.sh para descubrir cual es.")
 
     prompts = load_prompts(args.prompts)
-    models = [args.a, args.b]
+
+    # Una "variante" es un modelo corrido en un nivel de razonamiento concreto.
+    # El modelo viejo va sin nivel: no tiene el parametro.
+    if args.sweep_effort:
+        variants = [(f"{args.a} @{lv}", args.a, lv)
+                    for lv in ("low", "medium", "xhigh")]
+        label_a = f"{args.a} @medium"
+    else:
+        label_a = f"{args.a} @{args.reasoning_effort}" if args.reasoning_effort else args.a
+        variants = [(label_a, args.a, args.reasoning_effort)]
+    variants.append((args.b, args.b, None))
+    labels = [v[0] for v in variants]
 
     print(f"A (nuevo):    {args.a}")
     print(f"B (viejo):    {args.b}")
     print(f"Prompts:      {len(prompts)}   medidas: {args.runs}   warm-up: {args.warmup}")
     print(f"Concurrencia: {args.concurrency}")
+    if args.sweep_effort:
+        print("Razonamiento: barrido low / medium / xhigh sobre el modelo A")
+    elif args.reasoning_effort:
+        print(f"Razonamiento: {args.reasoning_effort}"
+              f"{' (via system prompt)' if args.effort_via_system else ''}")
+    else:
+        print("Razonamiento: por defecto del runtime  <-- OJO: en Qwen3.8 es xhigh,")
+        print("              y hara que parezca mucho mas lento de lo que es.")
+        print("              Usa --sweep-effort para verlo.")
     print(f"Host:         {args.host}")
     print("-" * 68)
 
-    results = {m: [] for m in models}
+    results = {lb: [] for lb in labels}
     errors = []
     memory = {}
 
-    for model in models:
+    warmed = set()
+    for label, model, effort in variants:
         # Warm-up: carga el modelo en memoria. Estas corridas NO se miden.
-        if args.warmup:
+        # Un modelo ya cargado no se recalienta entre variantes de effort.
+        if args.warmup and model not in warmed:
             print(f"\ncalentando {model} ({args.warmup} corrida/s descartada/s)...")
             for _ in range(args.warmup):
-                _, err = generate(args.host, model, prompts[0], args.timeout)
+                _, err = generate(args.host, model, prompts[0], args.timeout,
+                                  effort, args.effort_via_system)
                 if err:
                     print(f"  aviso durante warm-up: {err[:70]}")
-        mb = resident_mb(model)
-        memory[model] = mb
-        if mb:
-            print(f"  residente: {mb / 1024:.1f} GB")
+            warmed.add(model)
+            mb = resident_mb(model)
+            if mb:
+                print(f"  residente: {mb / 1024:.1f} GB")
+        memory[label] = resident_mb(model)
 
     for i, prompt in enumerate(prompts, 1):
         print(f"\n[{i}/{len(prompts)}] {prompt.replace(chr(10), ' ')[:52]}...")
-        for model in models:
+        for label, model, effort in variants:
+            gargs = (args.host, model, prompt, args.timeout, effort,
+                     args.effort_via_system)
             if args.concurrency > 1:
                 with concurrent.futures.ThreadPoolExecutor(args.concurrency) as ex:
-                    futs = [ex.submit(generate, args.host, model, prompt, args.timeout)
-                            for _ in range(args.runs)]
+                    futs = [ex.submit(generate, *gargs) for _ in range(args.runs)]
                     pairs = [f.result() for f in futs]
             else:
-                pairs = [generate(args.host, model, prompt, args.timeout)
-                         for _ in range(args.runs)]
+                pairs = [generate(*gargs) for _ in range(args.runs)]
 
             runs = []
             for metrics, err in pairs:
                 if err:
-                    errors.append({"model": model, "prompt_index": i, "error": err})
+                    errors.append({"variant": label, "prompt_index": i, "error": err})
                     runs.append(None)
                 else:
                     runs.append(metrics)
 
-            s = summarize(runs)
-            if s.get("ok"):
-                print(f"    {model:<28} p50 {s['wall_p50']:>6.2f}s  "
-                      f"p95 {s['wall_p95']:>6.2f}s  {s['tps_p50']:>6.1f} tok/s")
+            st = summarize(runs)
+            if st.get("ok"):
+                print(f"    {label:<30} p50 {st['wall_p50']:>6.2f}s  "
+                      f"p95 {st['wall_p95']:>6.2f}s  {st['tps_p50']:>6.1f} tok/s  "
+                      f"{st['output_tokens_p50']:>5.0f} tok")
             else:
-                print(f"    {model:<28} TODAS fallaron")
-            results[model].append({
-                "prompt_index": i, "prompt": prompt, "summary": s,
+                print(f"    {label:<30} TODAS fallaron")
+            results[label].append({
+                "prompt_index": i, "prompt": prompt, "summary": st,
                 "sample_output": next((r["response"] for r in runs if r), None),
             })
 
@@ -242,27 +296,33 @@ def main():
     print("\n" + "=" * 68)
     print("RESUMEN")
     print("=" * 68)
-    print(f"  {'modelo':<28} {'p50':>8} {'p95':>8} {'tok/s':>8} {'RAM':>9}")
-    for model in models:
-        oks = [e["summary"] for e in results[model] if e["summary"].get("ok")]
+    print(f"  {'variante':<30} {'p50':>8} {'p95':>8} {'tok/s':>8} {'tokens':>8}")
+    for label in labels:
+        oks = [e["summary"] for e in results[label] if e["summary"].get("ok")]
         if not oks:
-            print(f"  {model:<28} {'sin corridas exitosas':>36}")
+            print(f"  {label:<30} {'sin corridas exitosas':>34}")
             continue
-        mb = memory.get(model)
-        print(f"  {model:<28} "
-              f"{statistics.median(s['wall_p50'] for s in oks):>7.2f}s "
-              f"{statistics.median(s['wall_p95'] for s in oks):>7.2f}s "
-              f"{statistics.median(s['tps_p50'] for s in oks):>7.1f} "
-              f"{(f'{mb / 1024:.1f} GB' if mb else 'n/d'):>9}")
+        print(f"  {label:<30} "
+              f"{statistics.median(x['wall_p50'] for x in oks):>7.2f}s "
+              f"{statistics.median(x['wall_p95'] for x in oks):>7.2f}s "
+              f"{statistics.median(x['tps_p50'] for x in oks):>7.1f} "
+              f"{statistics.median(x['output_tokens_p50'] for x in oks):>8.0f}")
+    if args.sweep_effort:
+        print("\n  La columna 'tokens' es la que explica el coste de xhigh:")
+        print("  son tokens de razonamiento que pagas en tiempo y no ves.")
 
     if errors:
         print(f"\n  {len(errors)} llamada(s) fallaron -- detalle en el JSON.")
 
     payload = {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "host": args.host, "model_a_new": args.a, "model_b_old": args.b,
+        "host": args.host, "model_a_new": label_a, "model_b_old": args.b,
+        "variants": [{"label": lb, "model": m, "effort": e} for lb, m, e in variants],
         "runs_per_prompt": args.runs, "warmup": args.warmup,
-        "concurrency": args.concurrency, "resident_mb": memory,
+        "concurrency": args.concurrency,
+        "reasoning_effort": args.reasoning_effort,
+        "sweep_effort": args.sweep_effort,
+        "resident_mb": memory,
         "results": results, "errors": errors,
     }
     with open(OUT, "w", encoding="utf-8") as fh:
