@@ -73,7 +73,9 @@ a la vez. Si algo se rompe, sabes cuál de las dos fue.
 # --- Fase 3: medir ANTES de decidir ------------------------------------
 cp tareas-ejemplo.txt mis-tareas.txt
 $EDITOR mis-tareas.txt          # pon tus tareas reales
-./03-ab-eval.py --prompts mis-tareas.txt --runs 3
+./03-ab-eval.py --prompts mis-tareas.txt --runs 5
+./03-ab-eval.py --prompts mis-tareas.txt --concurrency 4   # bajo carga
+./05-report.py                  # comparativa lado a lado -> ab-report.html
 
 # --- Fase 4: introducir el alias SIN cambiar comportamiento -------------
 ./02-switch-model.sh --init     # alias -> modelo VIEJO
@@ -108,9 +110,30 @@ Y si quieres deshacer también la migración de configs:
 | `models.conf` | Fuente única de verdad. El único que editas a mano. | — |
 | `00-inventory.sh` | Detecta hardware, runtime, modelos y configs que nombran el viejo. | No |
 | `01-pull-qwen38.sh` | Descarga el 27B + prueba de humo. | Solo añade |
-| `03-ab-eval.py` | A/B sobre tus prompts: latencia, tok/s, salidas. Solo stdlib. | No |
+| `03-ab-eval.py` | A/B sobre tus prompts: p50/p95, tok/s, memoria, concurrencia. | No |
+| `05-report.py` | Convierte los resultados en HTML lado a lado para juzgar calidad. | No |
 | `02-switch-model.sh` | Crea/repunta el alias, con backup y auto-rollback si falla. | Sí (reversible) |
 | `04-repoint-configs.py` | Reescribe tus configs para que nombren el alias. Simulacro por defecto. | Sí (reversible) |
+
+### Sobre el benchmark
+
+Un bench mal hecho es peor que ninguno, porque da falsa confianza. `03-ab-eval.py`
+intenta no serlo:
+
+- **Warm-up descartado.** La primera llamada carga el modelo en memoria, y eso
+  son decenas de segundos. Incluirla castiga injustamente al modelo más grande.
+  Por defecto se descarta una corrida por modelo.
+- **p50 y p95, no solo la mediana.** La mediana esconde la cola, y la cola es lo
+  que de verdad se nota cuando estás trabajando.
+- **Memoria residente.** En 128GB unificados, cuánto ocupa el modelo y cuánto
+  margen queda es lo que decide cuántas sesiones te caben en paralelo. Se lee de
+  `ollama ps` (best-effort; sale `n/d` si no está disponible).
+- **Concurrencia.** `--concurrency N` lanza N peticiones a la vez para ver cuánto
+  se degrada bajo carga. 17GB dentro de 128GB dan margen para varias sesiones;
+  esto te dice cuántas.
+- **La calidad no se automatiza.** El script mide velocidad. `05-report.py` te
+  pone las dos respuestas a la misma tarea lado a lado y la juzgas tú. No hay
+  métrica automática que sustituya eso para tus tareas concretas.
 
 ### Sobre `04-repoint-configs.py`
 

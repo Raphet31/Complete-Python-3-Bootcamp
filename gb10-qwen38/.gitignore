@@ -4,3 +4,5 @@ ab-results.json
 .alias-state
 __pycache__/
 .config-backups/
+ab-report.html
+ab-report.md
