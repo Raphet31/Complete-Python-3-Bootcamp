@@ -8,6 +8,10 @@
 # El modelo viejo NUNCA se borra. Este script no invoca 'ollama rm' jamas.
 #
 # Uso:  ./02-switch-model.sh              repunta alias -> NEW_MODEL
+#       ./02-switch-model.sh --init       crea el alias -> OLD_MODEL
+#                                         (introduce la indireccion SIN cambiar
+#                                          comportamiento; hacer esto ANTES de
+#                                          migrar configs con 04)
 #       ./02-switch-model.sh --rollback   repunta alias -> OLD_MODEL
 #       ./02-switch-model.sh --status     solo muestra a que apunta hoy
 #       ./02-switch-model.sh --dry-run    enseña que haria, sin hacerlo
@@ -22,6 +26,7 @@ MODE="switch"
 DRY=0
 for arg in "$@"; do
     case "$arg" in
+        --init)     MODE="init" ;;
         --rollback) MODE="rollback" ;;
         --status)   MODE="status" ;;
         --dry-run)  DRY=1 ;;
@@ -52,14 +57,21 @@ if [[ "$MODE" == "status" ]]; then
 fi
 
 # --- Elegir destino -------------------------------------------------------
-if [[ "$MODE" == "rollback" ]]; then
+if [[ "$MODE" == "rollback" || "$MODE" == "init" ]]; then
     [[ -n "$OLD_MODEL" ]] || {
-        echo "ERROR: OLD_MODEL esta vacio en models.conf. No se a que volver." >&2
+        echo "ERROR: OLD_MODEL esta vacio en models.conf." >&2
         echo "Corre ./00-inventory.sh y rellenalo." >&2
         exit 1
     }
     DEST="$OLD_MODEL"
-    echo "==> ROLLBACK: $ALIAS -> $DEST"
+    if [[ "$MODE" == "init" ]]; then
+        echo "==> INIT: $ALIAS -> $DEST (el modelo que ya usas)"
+        echo "    Esto NO cambia comportamiento: solo crea la indireccion."
+        echo "    Siguiente: ./04-repoint-configs.py --apply, verificar, y"
+        echo "    recien entonces ./02-switch-model.sh para el flip."
+    else
+        echo "==> ROLLBACK: $ALIAS -> $DEST"
+    fi
 else
     DEST="$NEW_MODEL"
     echo "==> SWITCH: $ALIAS -> $DEST"

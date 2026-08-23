@@ -3,3 +3,4 @@ inventory-report.txt
 ab-results.json
 .alias-state
 __pycache__/
+.config-backups/

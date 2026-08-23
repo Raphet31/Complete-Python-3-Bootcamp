@@ -55,51 +55,75 @@ instantáneo y no duplica los 17GB en disco.
 
 ## Uso
 
+La secuencia importa. La idea es **separar "introducir la indirección" de
+"cambiar de modelo"**, para que nunca haya un paso en que cambien las dos cosas
+a la vez. Si algo se rompe, sabes cuál de las dos fue.
+
 ```bash
-# 0. Inventario. Solo lectura, no toca nada.
+# --- Fase 1: descubrir -------------------------------------------------
 ./00-inventory.sh --scan-home
+#   Anota el modelo que usas hoy y ponlo en models.conf:
+#     OLD_MODEL="loquesea:tag"
 
-#    Anota el modelo que estés usando hoy y ponlo en models.conf:
-#      OLD_MODEL="loquesea:tag"
-
-# 1. Descarga. No destructivo: los dos modelos conviven.
+# --- Fase 2: descargar (no destructivo) --------------------------------
 ./01-pull-qwen38.sh
-./01-pull-qwen38.sh --gguf    # si el tag NVFP4 falla
-./01-pull-qwen38.sh --yes     # no preguntar (runs no interactivos)
+./01-pull-qwen38.sh --gguf     # si el tag NVFP4 falla
+./01-pull-qwen38.sh --yes      # no preguntar (runs no interactivos)
 
-# 2. MIDE ANTES DE CAMBIAR.
+# --- Fase 3: medir ANTES de decidir ------------------------------------
 cp tareas-ejemplo.txt mis-tareas.txt
-$EDITOR mis-tareas.txt         # pon tus tareas reales
+$EDITOR mis-tareas.txt          # pon tus tareas reales
 ./03-ab-eval.py --prompts mis-tareas.txt --runs 3
 
-# 3. Solo si el nuevo gana en TUS tareas:
-./02-switch-model.sh --dry-run
-./02-switch-model.sh
+# --- Fase 4: introducir el alias SIN cambiar comportamiento -------------
+./02-switch-model.sh --init     # alias -> modelo VIEJO
+./04-repoint-configs.py --path ~/proyectos --path /etc/systemd/system
+#   ^ simulacro: revisa el diff con calma
+./04-repoint-configs.py --path ~/proyectos --apply
+#   Reinicia servicios y COMPRUEBA que todo sigue igual que antes.
+#   Hasta aqui no cambiaste de modelo: solo de nombre.
 
-# Volver atrás en cualquier momento:
+# --- Fase 5: el flip ----------------------------------------------------
+./02-switch-model.sh            # alias -> Qwen3.8-27B. Un comando.
+```
+
+Volver atrás, en cualquier momento y sin tocar ningún config:
+
+```bash
 ./02-switch-model.sh --rollback
 ./02-switch-model.sh --status
 ```
 
-Después del paso 3, apunta tus aplicaciones al alias:
+Y si quieres deshacer también la migración de configs:
 
 ```bash
-OLLAMA_MODEL=work-default
+./04-repoint-configs.py --list-backups
+./04-repoint-configs.py --restore
 ```
-
----
 
 ## Archivos
 
 | Archivo | Qué hace | ¿Modifica algo? |
 |---|---|---|
-| `models.conf` | Fuente única de verdad. Es el único que editas a mano. | — |
+| `models.conf` | Fuente única de verdad. El único que editas a mano. | — |
 | `00-inventory.sh` | Detecta hardware, runtime, modelos y configs que nombran el viejo. | No |
 | `01-pull-qwen38.sh` | Descarga el 27B + prueba de humo. | Solo añade |
 | `03-ab-eval.py` | A/B sobre tus prompts: latencia, tok/s, salidas. Solo stdlib. | No |
-| `02-switch-model.sh` | Repunta el alias, con backup y auto-rollback si falla. | Sí (reversible) |
+| `02-switch-model.sh` | Crea/repunta el alias, con backup y auto-rollback si falla. | Sí (reversible) |
+| `04-repoint-configs.py` | Reescribe tus configs para que nombren el alias. Simulacro por defecto. | Sí (reversible) |
 
----
+### Sobre `04-repoint-configs.py`
+
+Es el único script que toca archivos fuera del store de Ollama, así que es el
+más cuidadoso:
+
+- **Simulacro por defecto.** Enseña un diff unificado; hay que pasar `--apply`.
+- **Respalda todo** antes de escribir, con manifiesto, y `--restore` lo deshace.
+- **Reemplazo literal**, no regex: no hay metacaracteres que se escapen.
+- **No entra** en `.git`, `node_modules`, `venv`, `blobs`/`manifests` de Ollama,
+  ni en archivos binarios (detecta NUL), symlinks, o cosas de más de 2MB.
+- **No se toca a sí mismo**: los archivos de este toolkit mencionan nombres de
+  modelo a propósito y quedan excluidos aunque apuntes el `--path` al repo.
 
 ## Detalles que muerden
 
