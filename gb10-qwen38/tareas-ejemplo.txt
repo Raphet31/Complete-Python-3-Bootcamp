@@ -1,0 +1,26 @@
+# Reemplaza esto con TUS tareas reales. Prompts separados por una linea '---'.
+# Cuanto mas se parezcan a tu trabajo diario, mas util es la comparacion.
+# Un benchmark publico mide tareas genericas; esto mide las tuyas.
+
+Refactoriza esta funcion de Python para que sea mas legible, sin cambiar su comportamiento:
+
+def f(l):
+    r = []
+    for i in range(len(l)):
+        if l[i] % 2 == 0:
+            r.append(l[i] * 2)
+    return r
+---
+Explica que provoca este error y como lo arreglo:
+
+Traceback (most recent call last):
+  File "app.py", line 42, in <module>
+    total = sum(row["precio"] for row in filas)
+KeyError: 'precio'
+---
+Escribe tests de pytest para una funcion parse_csv(ruta) que devuelve una
+lista de diccionarios y debe lanzar ValueError si el archivo esta vacio.
+---
+Resume en 5 bullets que hace este comando y que riesgos tiene:
+
+find /var/log -name "*.log" -mtime +30 -exec rm {} \;

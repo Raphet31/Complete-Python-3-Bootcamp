@@ -1,0 +1,5 @@
+# Salidas locales de la maquina, no van al repo
+inventory-report.txt
+ab-results.json
+.alias-state
+__pycache__/
