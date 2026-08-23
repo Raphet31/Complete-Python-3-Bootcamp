@@ -23,7 +23,7 @@ source ./models.conf
 
 STATE=".run-all-state"
 LOG="run-all.log"
-PHASES=(preflight inventory pull tasks bench report verdict init repoint flip)
+PHASES=(preflight inventory bfosgate pull tasks bench report verdict init repoint flip)
 
 AUTO=0; YES_FLIP=0; FROM=""; MODE="run"; SKIP_BENCH=0
 while [[ $# -gt 0 ]]; do
@@ -110,6 +110,28 @@ if ! done_phase inventory; then
         fail inventory "el modelo viejo '$OLD_MODEL' no esta instalado. Corrige OLD_MODEL en models.conf."
     fi
     mark_phase inventory
+fi
+
+# ----------------------------------------------------------------- bfos gate
+# R7 de BF-OS es SAGRADO: nada se baja sin entrada previa en MODEL_INVENTORY.md.
+# Esta puerta va ANTES de la descarga a proposito.
+if ! done_phase bfosgate; then
+    say "2.5/10  Puerta BF-OS (R7 / R8 / R4)"
+    if [[ -d "${BFOS_ROOT:-$HOME/BELLA_FLOR_OS}" ]]; then
+        ./07-bfos-gate.py --bfos "${BFOS_ROOT:-$HOME/BELLA_FLOR_OS}" 2>&1 | tee -a "$LOG"
+        GATE=${PIPESTATUS[0]}
+        case "$GATE" in
+            0) info "puerta superada." ;;
+            1) fail bfosgate "hay violaciones de reglas SAGRADAS. Corrigelas antes de seguir. Para saltarla a conciencia: BFOS_SKIP_GATE=1" ;;
+            *) info "puerta no concluyente; revisa los avisos de arriba." ;;
+        esac
+    elif [[ "${BFOS_SKIP_GATE:-0}" == "1" ]]; then
+        info "BFOS_SKIP_GATE=1: puerta omitida a peticion."
+    else
+        info "No encuentro BELLA_FLOR_OS; puerta omitida."
+        info "Si esta en otra ruta:  BFOS_ROOT=/ruta ./run-all.sh ..."
+    fi
+    mark_phase bfosgate
 fi
 
 # --------------------------------------------------------------------- pull

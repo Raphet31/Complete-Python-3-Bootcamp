@@ -85,6 +85,31 @@ instantáneo y no duplica los 17GB en disco.
 
 ---
 
+## Antes de nada: reglas de BF-OS v6
+
+Este toolkit se escribió sin conocer BF-OS. Al leer el PLAN COLIBRÍ v1.1
+aparecieron tres reglas marcadas **SAGRADO** que la migración, tal como estaba,
+habría roto. `07-bfos-gate.py` las comprueba y **aborta** antes de tocar nada.
+
+| Regla | Qué exige | Qué hacía mal el toolkit |
+|---|---|---|
+| **R7** | Ningún modelo se baja sin entrada previa en `MODEL_INVENTORY.md` con rol asignado | `run-all.sh` descargaba directo |
+| **R8** | El drift validator cruza **cinco** fuentes al boot | `04-repoint-configs.py` reescribía `registry.yaml`, `agents/*.yaml`, `swarm_gpu_models.yaml` y el picker → boot **ROJO** |
+| **R4** | Memoria unificada compartida, `OLLAMA_MAX_LOADED_MODELS=1` | El A/B carga dos modelos; `--concurrency` carga más |
+
+Las cinco fuentes del drift validator quedan ahora **excluidas por defecto** de la
+reescritura automática. Actualizarlas es trabajo manual y coherente en las cinco
+a la vez — nunca parcial.
+
+```bash
+./07-bfos-gate.py --bfos ~/BELLA_FLOR_OS
+# 0 puede continuar   1 hay violaciones   2 no se pudo verificar
+```
+
+`run-all.sh` la ejecuta sola, **antes de la descarga**, y se detiene si sale 1.
+
+---
+
 ## Uso
 
 ### Un solo comando
@@ -166,6 +191,7 @@ Volver atrás, sin tocar ningún config:
 | `05-report.py` | Convierte los resultados en HTML lado a lado para juzgar calidad. | No |
 | `06-verdict.py` | Lee las medidas y dicta recomendación. Salida: 0 cambiar, 1 no, 2 decides tú. | No |
 | `run-all.sh` | Encadena las diez fases con estado y reanudación. | Orquesta |
+| `07-bfos-gate.py` | Verifica R7/R8/R4 de BF-OS antes de descargar. Aborta si se violan. | No |
 | `_conf.py` | Lectura compartida de `models.conf`, con expansión de variables. | No |
 | `02-switch-model.sh` | Crea/repunta el alias, con backup y auto-rollback si falla. | Sí (reversible) |
 | `04-repoint-configs.py` | Reescribe tus configs para que nombren el alias. Simulacro por defecto. | Sí (reversible) |

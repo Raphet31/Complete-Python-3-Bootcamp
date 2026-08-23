@@ -49,6 +49,14 @@ SKIP_EXT = {
 
 MAX_BYTES = 2 * 1024 * 1024  # un config de >2MB no es un config
 
+# Las cinco fuentes del drift validator de BF-OS v6 (regla R8). El validador
+# las cruza al boot; si el nombre del modelo cambia en unas y no en otras, el
+# boot sale ROJO. Reescribirlas automaticamente es justo la forma de romperlo,
+# asi que quedan excluidas salvo que se pase --allow-drift-sources.
+DRIFT_FILES = {"registry.yaml", "swarm_gpu_models.yaml", "MODEL_INVENTORY.md"}
+DRIFT_DIRS = {"agents"}
+DRIFT_MARKERS = ("CURATED_LOCAL", "AGENTS = {", "AGENTS={")
+
 
 sys.path.insert(0, HERE)
 from _conf import read_conf as _read_conf
@@ -68,9 +76,24 @@ def is_texty(path):
     return b"\x00" not in chunk
 
 
-def candidate_files(roots, needle):
+def is_drift_source(path, text):
+    """¿Es una de las cinco fuentes que el drift validator cruza al boot?"""
+    name = os.path.basename(path)
+    if name in DRIFT_FILES:
+        return name
+    parts = path.split(os.sep)
+    if any(d in DRIFT_DIRS for d in parts[:-1]) and name.endswith((".yaml", ".yml")):
+        return f"agents/{name}"
+    for marker in DRIFT_MARKERS:
+        if marker in text:
+            return f"contiene {marker!r}"
+    return None
+
+
+def candidate_files(roots, needle, allow_drift=False):
     """Archivos de texto, razonables en tamaño, que contienen el modelo viejo."""
     seen = set()
+    skipped_drift = []
     for root in roots:
         root = os.path.abspath(os.path.expanduser(root))
         if not os.path.exists(root):
@@ -103,9 +126,21 @@ def candidate_files(roots, needle):
                         text = fh.read()
                 except (OSError, UnicodeDecodeError):
                     continue
-                if needle in text:
-                    seen.add(path)
-                    yield path, text
+                if needle not in text:
+                    continue
+                reason = is_drift_source(path, text)
+                if reason and not allow_drift:
+                    skipped_drift.append((path, reason))
+                    continue
+                seen.add(path)
+                yield path, text
+    if skipped_drift:
+        print("\n  PROTEGIDOS (fuentes del drift validator, regla R8 de BF-OS):")
+        for path, reason in skipped_drift:
+            print(f"    - {path}  [{reason}]")
+        print("  Estas NO se reescriben: cambiarlas parcialmente deja el boot ROJO.")
+        print("  Actualizalas a mano, coherentemente en las cinco, o pasa")
+        print("  --allow-drift-sources si sabes lo que haces.\n")
 
 
 def show_diff(path, before, after):
@@ -169,6 +204,10 @@ def main():
     ap.add_argument("--restore", nargs="?", const=True, default=False,
                     metavar="STAMP", help="deshacer; opcionalmente un backup concreto")
     ap.add_argument("--list-backups", action="store_true")
+    ap.add_argument("--allow-drift-sources", action="store_true",
+                    help="permitir reescribir registry.yaml / agents/*.yaml / "
+                         "swarm_gpu_models.yaml / el picker. Rompe el drift "
+                         "validator si no las actualizas TODAS a la vez.")
     args = ap.parse_args()
 
     if args.list_backups:
@@ -203,7 +242,7 @@ def main():
     print(f"Modo:        {'APLICAR (escribe)' if args.apply else 'SIMULACRO (no escribe)'}")
     print("-" * 61)
 
-    hits = list(candidate_files(roots, args.old))
+    hits = list(candidate_files(roots, args.old, args.allow_drift_sources))
     if not hits:
         print("\nNingun archivo menciona el modelo viejo. Nada que hacer.")
         return 0
