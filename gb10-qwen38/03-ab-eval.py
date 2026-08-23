@@ -43,19 +43,12 @@ CONF = os.path.join(HERE, "models.conf")
 OUT = os.path.join(HERE, "ab-results.json")
 
 
+sys.path.insert(0, HERE)
+from _conf import read_conf as _read_conf
+
+
 def read_conf():
-    conf = {}
-    if not os.path.exists(CONF):
-        return conf
-    pat = re.compile(r'^\s*([A-Z_]+)\s*=\s*"?([^"#\n]*)"?')
-    with open(CONF, encoding="utf-8") as fh:
-        for line in fh:
-            if line.lstrip().startswith("#"):
-                continue
-            m = pat.match(line)
-            if m:
-                conf[m.group(1)] = m.group(2).strip()
-    return conf
+    return _read_conf(CONF)
 
 
 def load_prompts(path):

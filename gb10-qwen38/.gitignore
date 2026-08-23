@@ -6,3 +6,7 @@ __pycache__/
 .config-backups/
 ab-report.html
 ab-report.md
+run-all.log
+.run-all-state
+.verdict-code
+mis-tareas.txt

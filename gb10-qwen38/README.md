@@ -87,54 +87,65 @@ instantáneo y no duplica los 17GB en disco.
 
 ## Uso
 
-La secuencia importa. La idea es **separar "introducir la indirección" de
-"cambiar de modelo"**, para que nunca haya un paso en que cambien las dos cosas
-a la vez. Si algo se rompe, sabes cuál de las dos fue.
+### Un solo comando
+
+```bash
+./run-all.sh --auto
+```
+
+Encadena las diez fases, guarda el progreso y se puede reanudar. Se **detiene
+deliberadamente antes de cambiar de modelo** para que mires el informe; el
+último paso lo das tú, o lo automatizas con `--yes-flip`.
+
+```bash
+./run-all.sh                 # todo hasta el informe, sin tocar el modelo
+./run-all.sh --auto          # además migra los configs sin preguntar
+./run-all.sh --auto --yes-flip   # y cambia de modelo si el veredicto aprueba
+./run-all.sh --status        # qué fases van hechas
+./run-all.sh --from bench    # reanuda desde una fase
+```
+
+Lo único que conviene hacer a mano: sustituir `mis-tareas.txt` por tus tareas
+reales y reejecutar `./run-all.sh --from bench`. El script lo crea a partir del
+ejemplo si no existe, pero un bench sobre tareas genéricas mide poco.
+
+### Paso a paso, si prefieres control
+
+La secuencia separa **introducir la indirección** de **cambiar de modelo**, para
+que un fallo sea atribuible a uno u otro.
 
 ```bash
 # --- Fase 1: descubrir -------------------------------------------------
 ./00-inventory.sh --scan-home
-#   Anota el modelo que usas hoy y ponlo en models.conf:
-#     OLD_MODEL="loquesea:tag"
 
 # --- Fase 2: descargar (no destructivo) --------------------------------
 ./01-pull-qwen38.sh
 ./01-pull-qwen38.sh --gguf     # si el tag NVFP4 falla
-./01-pull-qwen38.sh --yes      # no preguntar (runs no interactivos)
+./01-pull-qwen38.sh --yes      # no preguntar
 
 # --- Fase 3: medir ANTES de decidir ------------------------------------
-cp tareas-ejemplo.txt mis-tareas.txt
-$EDITOR mis-tareas.txt          # pon tus tareas reales
+cp tareas-ejemplo.txt mis-tareas.txt && $EDITOR mis-tareas.txt
 ./03-ab-eval.py --prompts mis-tareas.txt --runs 5 --sweep-effort
-#   ^ IMPRESCINDIBLE la primera vez: mide low/medium/xhigh. Sin esto el 3.8
-#     corre en xhigh y parece mucho mas lento de lo que realmente es.
-./03-ab-eval.py --prompts mis-tareas.txt --reasoning-effort medium --concurrency 4
-./05-report.py                  # comparativa lado a lado -> ab-report.html
+#   ^ IMPRESCINDIBLE la primera vez: sin esto el 3.8 corre en xhigh y
+#     parece mucho más lento de lo que es.
+./05-report.py                 # comparativa lado a lado -> ab-report.html
+./06-verdict.py                # recomendación automática
 
 # --- Fase 4: introducir el alias SIN cambiar comportamiento -------------
-./02-switch-model.sh --init     # alias -> modelo VIEJO
-./04-repoint-configs.py --path ~/proyectos --path /etc/systemd/system
-#   ^ simulacro: revisa el diff con calma
+./02-switch-model.sh --init
+./04-repoint-configs.py --path ~/proyectos          # simulacro
 ./04-repoint-configs.py --path ~/proyectos --apply
-#   Reinicia servicios y COMPRUEBA que todo sigue igual que antes.
-#   Hasta aqui no cambiaste de modelo: solo de nombre.
+#   Reinicia servicios y comprueba que todo sigue igual.
 
 # --- Fase 5: el flip ----------------------------------------------------
-./02-switch-model.sh            # alias -> Qwen3.8-27B. Un comando.
+./02-switch-model.sh
 ```
 
-Volver atrás, en cualquier momento y sin tocar ningún config:
+Volver atrás, sin tocar ningún config:
 
 ```bash
 ./02-switch-model.sh --rollback
-./02-switch-model.sh --status
-```
-
-Y si quieres deshacer también la migración de configs:
-
-```bash
-./04-repoint-configs.py --list-backups
-./04-repoint-configs.py --restore
+./04-repoint-configs.py --restore    # y también los configs, si hace falta
 ```
 
 ## Archivos
@@ -146,6 +157,9 @@ Y si quieres deshacer también la migración de configs:
 | `01-pull-qwen38.sh` | Descarga el 27B + prueba de humo. | Solo añade |
 | `03-ab-eval.py` | A/B sobre tus prompts: p50/p95, tok/s, memoria, concurrencia. | No |
 | `05-report.py` | Convierte los resultados en HTML lado a lado para juzgar calidad. | No |
+| `06-verdict.py` | Lee las medidas y dicta recomendación. Salida: 0 cambiar, 1 no, 2 decides tú. | No |
+| `run-all.sh` | Encadena las diez fases con estado y reanudación. | Orquesta |
+| `_conf.py` | Lectura compartida de `models.conf`, con expansión de variables. | No |
 | `02-switch-model.sh` | Crea/repunta el alias, con backup y auto-rollback si falla. | Sí (reversible) |
 | `04-repoint-configs.py` | Reescribe tus configs para que nombren el alias. Simulacro por defecto. | Sí (reversible) |
 
