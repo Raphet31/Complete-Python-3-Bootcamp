@@ -91,13 +91,17 @@ Este toolkit vive en una rama del repo `Complete-Python-3-Bootcamp`. En la GB10
 **no está clonado**, así que la primera vez hay que traerlo. `git pull` a secas
 falla con *"no such file or directory"* precisamente por eso.
 
-```bash
-git clone --depth 1 --single-branch \
-  --branch claude/upgrade-qend-3-8-py4bte \
-  https://github.com/Raphet31/Complete-Python-3-Bootcamp.git \
-  ~/qwen38-migration
+Un comando por línea, **sin barras de continuación**: al pegar en una terminal
+remota las líneas se juntan, y `\ ` no continúa línea — escapa el espacio. El
+resultado es que `git` recibe argumentos basura y falla con
+*"unknown option"* o *"Too many arguments"*.
 
-cd ~/qwen38-migration/gb10-qwen38
+```bash
+git clone --depth 1 --single-branch -b claude/upgrade-qend-3-8-py4bte https://github.com/Raphet31/Complete-Python-3-Bootcamp.git ~/qwen38-migration
+```
+
+```bash
+cd ~/qwen38-migration/gb10-qwen38 && ./07-bfos-gate.py --bfos ~/BELLA_FLOR_OS
 ```
 
 Son ~50 MB y unos segundos. El toolkit en sí son 124 KB; el resto es el curso
