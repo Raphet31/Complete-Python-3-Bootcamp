@@ -85,6 +85,35 @@ instantáneo y no duplica los 17GB en disco.
 
 ---
 
+## Instalación en la GB10 (primera vez)
+
+Este toolkit vive en una rama del repo `Complete-Python-3-Bootcamp`. En la GB10
+**no está clonado**, así que la primera vez hay que traerlo. `git pull` a secas
+falla con *"no such file or directory"* precisamente por eso.
+
+```bash
+git clone --depth 1 --single-branch \
+  --branch claude/upgrade-qend-3-8-py4bte \
+  https://github.com/Raphet31/Complete-Python-3-Bootcamp.git \
+  ~/qwen38-migration
+
+cd ~/qwen38-migration/gb10-qwen38
+```
+
+Son ~50 MB y unos segundos. El toolkit en sí son 124 KB; el resto es el curso
+de Python que arrastra el repo.
+
+**Para actualizar** después, ya desde `~/qwen38-migration`:
+
+```bash
+git pull
+```
+
+Los scripts resuelven sus rutas relativas a sí mismos, así que da igual desde
+qué directorio los invoques.
+
+---
+
 ## Antes de nada: reglas de BF-OS v6
 
 Este toolkit se escribió sin conocer BF-OS. Al leer el PLAN COLIBRÍ v1.1
