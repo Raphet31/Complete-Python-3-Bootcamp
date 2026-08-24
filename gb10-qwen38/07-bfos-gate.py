@@ -57,6 +57,86 @@ def find(root, names):
     return hits
 
 
+def ollama_models(host):
+    """Modelos instalados. La API HTTP es mas fiable que el binario: en un
+    shell SSH limpio 'ollama' suele no estar en PATH aunque el daemon corra."""
+    import urllib.request
+    try:
+        with urllib.request.urlopen(f"{host}/api/tags", timeout=10) as r:
+            return sorted(m["name"] for m in json.load(r).get("models", [])), None
+    except Exception as exc:  # noqa: BLE001
+        pass
+    for cand in ("/usr/local/bin/ollama", "/usr/bin/ollama",
+                 os.path.expanduser("~/.local/bin/ollama"), "ollama"):
+        exe = shutil.which(cand) if cand == "ollama" else (
+            cand if os.path.exists(cand) else None)
+        if not exe:
+            continue
+        try:
+            out = subprocess.run([exe, "list"], capture_output=True, text=True,
+                                 timeout=20).stdout
+            return sorted(l.split()[0] for l in out.splitlines()[1:] if l.strip()), None
+        except (subprocess.SubprocessError, OSError):
+            continue
+    return [], "no pude consultar Ollama (ni API ni binario)"
+
+
+def declared_models(path):
+    """Nombres con pinta de tag de modelo dentro de un fichero."""
+    try:
+        text = open(path, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return []
+    return sorted(set(re.findall(r'\b[a-z0-9][a-z0-9._-]*:[a-z0-9][a-z0-9._-]*\b',
+                                 text)))
+
+
+def report(args):
+    print("=" * 66)
+    print("INFORME DE MODELOS  (solo lectura, no cambia nada)")
+    print("=" * 66)
+
+    print(f"\n[1] INSTALADOS en Ollama  ({args.host})")
+    models, err = ollama_models(args.host)
+    if err:
+        print(f"    {err}")
+    elif not models:
+        print("    ninguno")
+    else:
+        for m in models:
+            print(f"    {m}")
+
+    print("\n[2] DECLARADOS en MODEL_INVENTORY.md")
+    inv = find(args.bfos, {"MODEL_INVENTORY.md"})
+    if not inv:
+        print("    no encontrado")
+    else:
+        print(f"    {inv[0]}")
+        for m in declared_models(inv[0]):
+            print(f"      {m}")
+
+    print("\n[3] DECLARADOS en las fuentes reales del drift validator")
+    print("    (se omiten las copias dentro de .claude/worktrees)")
+    for dirpath, dirnames, filenames in os.walk(args.bfos):
+        if "worktrees" in dirpath.split(os.sep):
+            dirnames[:] = []
+            continue
+        dirnames[:] = [d for d in dirnames if d not in {".git", "node_modules"}]
+        for fn in filenames:
+            if fn in {"registry.yaml", "swarm_gpu_models.yaml"}:
+                fp = os.path.join(dirpath, fn)
+                ms = declared_models(fp)
+                print(f"    {fp}")
+                for m in ms[:12]:
+                    print(f"      {m}")
+
+    print("\n" + "=" * 66)
+    print("Pega esto de vuelta. Con [1] y [2] fijo OLD_MODEL de verdad")
+    print("y redacto la entrada de MODEL_INVENTORY.md que exige R7.")
+    print("=" * 66)
+    return 0
+
+
 def main():
     conf = read_conf(os.path.join(HERE, "models.conf"))
     ap = argparse.ArgumentParser(description=__doc__,
@@ -66,7 +146,15 @@ def main():
     ap.add_argument("--model", default=conf.get("NEW_MODEL", ""),
                     help="modelo que se quiere introducir")
     ap.add_argument("--old", default=conf.get("OLD_MODEL", ""))
+    ap.add_argument("--report", action="store_true",
+                    help="ademas del gate, volcar que modelos hay realmente "
+                         "instalados y declarados (solo lectura)")
+    ap.add_argument("--host", default=conf.get("OLLAMA_HOST")
+                    or "http://localhost:11434")
     args = ap.parse_args()
+
+    if args.report:
+        return report(args)
 
     problems, warnings, unknown = [], [], []
     print("=" * 66)

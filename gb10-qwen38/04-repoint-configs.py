@@ -38,6 +38,9 @@ SKIP_DIRS = {
     ".git", ".hg", ".svn", "node_modules", ".venv", "venv", "__pycache__",
     ".cache", ".mypy_cache", ".pytest_cache", "blobs", "manifests",
     ".ollama", "site-packages", "dist", "build", ".terraform",
+    # Worktrees de git: son ramas de trabajo vivas. Reescribir dentro deja 8
+    # ramas con diffs espurios que nadie pidio. La rama activa se migra sola.
+    "worktrees",
 }
 
 # Extensiones que jamas son config de texto.
