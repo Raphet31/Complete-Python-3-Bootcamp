@@ -1,6 +1,6 @@
 # N1 — “La flor de Navidad no es una flor” · Short, canal A (Bella Flor)
 
-**Duración:** 50–55 s · **Formato:** 9:16 · **Línea visual:** Editorial botánica · **Voz:** Johnny · **Color protagonista:** rojo pascua sobre crema
+**Duración:** 50–55 s · **Formato:** 9:16 · **Línea visual:** Editorial botánica · **Voz:** voz del canal A (voz a voz sobre grabación de Raphet) · **Color protagonista:** rojo pascua sobre crema
 **Publicar:** semana del 23 de noviembre de 2026
 
 > ⚠️ Johnny valida antes de grabar: datos históricos y los tips de cuidado según lo que ve en el taller.
@@ -9,7 +9,7 @@
 
 ## Guion y tomas
 
-| # | Tiempo | Voz (Johnny) | Visual | Texto en pantalla |
+| # | Tiempo | Voz | Visual | Texto en pantalla |
 |---|--------|--------------|--------|-------------------|
 | 1 | 0:00–0:05 | “La flor más famosa de la Navidad… no es una flor.” | Pascua roja en primer plano; la tinta dibuja un círculo dorado alrededor del centro amarillo diminuto | NO ES UNA FLOR |
 | 2 | 0:05–0:14 | “Lo rojo que tú ves son hojas. Se llaman brácteas. La flor de verdad es esto chiquitito y amarillo del centro.” | Zoom lento al centro; etiquetas botánicas finas señalan bráctea y flor | Bráctea · Flor |

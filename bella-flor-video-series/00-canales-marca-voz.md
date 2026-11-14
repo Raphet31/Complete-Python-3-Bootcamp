@@ -7,7 +7,7 @@
 | Para quién | Público / clientes en PR y diáspora | Público curioso + floristas + futuros estudiantes | Empleados |
 | Qué va | Serie Tradiciones, “por qué regalar flores”, cuidado en casa, detrás del arreglo | Jocosos, “libro vs. taller”, Finca y Logística, Cómo funciona, Materiales, Estilos | Versión interna de Finca, Materiales, Cómo funciona, Estilos + checklists |
 | Tono | Premium, cálido, elegante. Humor fino, nunca chiste | Suelto, boricua, jocoso, directo | Claro y práctico |
-| Voz | Johnny (clonada con su permiso) | Voz general o personaje | La que tenga el video base |
+| Voz | Voz escogida, cálida y elegante (voz a voz sobre grabación de Raphet) | Voz escogida, más viva | La que tenga el video base |
 | Visual | Línea “Editorial botánica” (sección 2) | Línea “Taller” (sección 3) | Igual al video base + pantallas de checklist |
 | Vende | Flores (Shopify, teléfono, funerarias) | El curso más adelante | Nada |
 | Dónde vive | YouTube + IG + FB + TikTok de Bella Flor | YouTube + TikTok + IG propios, nombre distinto | Videos **no listados** en YouTube o carpeta compartida, con playlist por serie |
@@ -62,13 +62,32 @@ no text, no watermark, 9:16 vertical composition
 
 ## 4. Voz
 
-- **Canal A:** voz de Johnny clonada. Da el sabor y la autoridad de maestro floral.
-- **Canal B e internos:** voz general. Se escoge probando 3 voces con el mismo párrafo y se queda la que suene más natural diciendo palabras boricuas.
-- **Lo que hace falta de Johnny:**
-  1. Autorización por escrito para clonar y usar su voz en contenido de Bella Flor.
-  2. 30 minutos de grabación limpia: cuarto silencioso con cortinas o ropa (un clóset sirve), celular a un palmo de la boca, sin música ni aire acondicionado sonando.
-  3. Que lea variado: 10 min narrando tranquilo, 10 min explicando como a un cliente, 10 min contando una historia con emoción. Yo preparo el texto.
-- **Control de calidad:** todo audio clonado lo escucha Johnny antes de publicar. Si una frase suena rara, la graba él directo; mezclar voz real y clonada en el mismo video funciona bien.
+**Decisión:** no se usa la voz de Johnny. Se usa una voz agradable escogida por prueba, con el acento y la forma de hablar de Raphet.
+
+**Método: voz a voz (speech-to-speech / voice changer).** Raphet graba el guion con su ritmo y acento boricua; la herramienta le cambia el timbre por el de la voz escogida y conserva la entonación, las pausas y la pronunciación. Es la forma más confiable de que suene boricua, porque las voces de texto a voz en español casi siempre salen neutras o de otro país.
+
+| Opción | Cómo | Cuándo usarla |
+|---|---|---|
+| **1. Voz a voz** (recomendada) | Raphet graba cada guion (1–5 min) y se convierte al timbre escogido | Canal A y todo lo que lleve sabor |
+| 2. Clon de Raphet con timbre ajustado | Se clona su voz una vez y se genera desde texto, bajando o subiendo el tono | Videos internos y volumen alto, cuando no haya tiempo de grabar |
+| 3. Voz general de catálogo desde texto | Sin grabar nada | Solo si pasa la prueba de palabras boricuas |
+
+**Cómo se escoge la voz**
+
+1. Raphet graba una vez el párrafo de prueba de abajo, en un cuarto silencioso (un clóset con ropa sirve), celular a un palmo de la boca.
+2. Se convierte esa misma grabación a 4–5 voces distintas del catálogo.
+3. Se escuchan a ciegas con Johnny y dos personas del equipo. Gana la más agradable; se guarda el nombre de la voz y sus ajustes para que todos los videos suenen igual.
+4. Una voz para el canal A (cálida, pausada, elegante) y otra para el B (más viva). Pueden salir de la misma prueba.
+
+**Párrafo de prueba** (tiene las palabras que suelen fallar):
+
+> “La flor más famosa de la Navidad no es una flor. Lo rojo que tú ves son hojas. Aquí en Puerto Rico le decimos pascua, y ya. Para que te llegue a Reyes: mucha claridad, lejos del chorro del aire, y agua solo cuando la tierra esté seca. En el taller, el trece de febrero a las cuatro de la tarde, la fila llega hasta la calle. Girasoles, gladiolas, pompones y astromelias: en Bella Flor ya llegaron.”
+
+**Reglas**
+
+- Solo se clona la voz de quien lo autoriza; aquí, la de Raphet. Las voces de catálogo se usan con la licencia comercial del plan.
+- Mismo micrófono y mismo cuarto en todas las grabaciones, para que el resultado sea parejo.
+- Todo audio se escucha completo antes de publicar; frase que suene rara se regraba.
 
 ## 5. Tres enfoques a probar (mismo tema, tres cortes)
 
