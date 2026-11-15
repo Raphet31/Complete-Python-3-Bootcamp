@@ -1,0 +1,5 @@
+G01/imagenes/
+G01/clips/
+G01/prep/
+__pycache__/
+*.wav
