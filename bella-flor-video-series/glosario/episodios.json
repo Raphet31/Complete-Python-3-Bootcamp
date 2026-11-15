@@ -1,0 +1,184 @@
+{
+  "serie": "¿Cómo le dices tú?",
+  "canal": "B",
+  "nota": "Los nombres con \"validar\": true los confirma Johnny antes de publicar.",
+  "episodios": [
+    {
+      "id": "G01",
+      "slug": "pascua",
+      "foto": "pascua.jpg",
+      "color": "#B3202A",
+      "nombres": [
+        {"label": "Nombre científico", "nombre": "Euphorbia pulcherrima", "cientifico": true},
+        {"label": "En inglés", "nombre": "Poinsettia"},
+        {"label": "En México", "nombre": "Flor de Nochebuena"},
+        {"label": "En España", "nombre": "Flor de Pascua"},
+        {"label": "En Argentina", "nombre": "Estrella federal"},
+        {"label": "En Puerto Rico", "nombre": "Pascua", "validar": false}
+      ],
+      "titulo": "Esta flor tiene 6 nombres 🌺 ¿Cómo le dices tú?",
+      "hashtags": "#pascua #poinsettia #nochebuena #flores #Navidad"
+    },
+    {
+      "id": "G02",
+      "slug": "gipsofila",
+      "foto": "gipsofila.jpg",
+      "color": "#E8E4DA",
+      "nombres": [
+        {"label": "Nombre científico", "nombre": "Gypsophila paniculata", "cientifico": true},
+        {"label": "En inglés", "nombre": "Baby's breath"},
+        {"label": "En España", "nombre": "Paniculata", "validar": true},
+        {"label": "En México", "nombre": "Nube"},
+        {"label": "Español general", "nombre": "Gipsófila"},
+        {"label": "En el taller (PR)", "nombre": "Baby breath", "validar": true}
+      ],
+      "titulo": "La flor que todo el mundo conoce y nadie sabe cómo se llama ☁️",
+      "hashtags": "#gipsofila #babysbreath #nube #flores #floristeria"
+    },
+    {
+      "id": "G03",
+      "slug": "alstroemeria",
+      "foto": "alstroemeria.jpg",
+      "color": "#E07A9B",
+      "nombres": [
+        {"label": "Nombre científico", "nombre": "Alstroemeria", "cientifico": true},
+        {"label": "En inglés", "nombre": "Peruvian lily"},
+        {"label": "En Perú y Chile", "nombre": "Lirio de los incas", "validar": true},
+        {"label": "En Latinoamérica", "nombre": "Astromelia"},
+        {"label": "En el taller (PR)", "nombre": "Astromelia", "validar": true}
+      ],
+      "titulo": "Dura 2 semanas en agua y tiene 5 nombres 🌸",
+      "hashtags": "#alstroemeria #astromelia #flores #floristeria"
+    },
+    {
+      "id": "G04",
+      "slug": "cala",
+      "foto": "cala.jpg",
+      "color": "#F2EFE6",
+      "nombres": [
+        {"label": "Nombre científico", "nombre": "Zantedeschia aethiopica", "cientifico": true},
+        {"label": "En inglés", "nombre": "Calla lily"},
+        {"label": "En España", "nombre": "Cala"},
+        {"label": "En México", "nombre": "Alcatraz"},
+        {"label": "En Colombia", "nombre": "Cartucho", "validar": true},
+        {"label": "En Puerto Rico", "nombre": "Cala", "validar": true}
+      ],
+      "titulo": "En México es alcatraz, en Colombia cartucho 🤍 ¿Y en tu país?",
+      "hashtags": "#cala #alcatraz #callalily #flores #bodas"
+    },
+    {
+      "id": "G05",
+      "slug": "pompon",
+      "foto": "pompon.jpg",
+      "color": "#F2C230",
+      "nombres": [
+        {"label": "Nombre científico", "nombre": "Chrysanthemum × morifolium", "cientifico": true},
+        {"label": "En inglés", "nombre": "Mum · Pompon"},
+        {"label": "En España", "nombre": "Crisantemo"},
+        {"label": "En Latinoamérica", "nombre": "Pompón"},
+        {"label": "En el taller (PR)", "nombre": "Pompón", "validar": true}
+      ],
+      "titulo": "¿Crisantemo o pompón? Es la misma flor 🌼",
+      "hashtags": "#crisantemo #pompon #mums #flores #floristeria"
+    },
+    {
+      "id": "G06",
+      "slug": "stock",
+      "foto": "stock.jpg",
+      "color": "#B39CD0",
+      "nombres": [
+        {"label": "Nombre científico", "nombre": "Matthiola incana", "cientifico": true},
+        {"label": "En inglés", "nombre": "Stock"},
+        {"label": "En español", "nombre": "Alhelí"},
+        {"label": "En el taller (PR)", "nombre": "Stock", "validar": true}
+      ],
+      "titulo": "En el taller le decimos stock… pero en español tiene un nombre precioso 💜",
+      "hashtags": "#alheli #stock #flores #floristeria"
+    },
+    {
+      "id": "G07",
+      "slug": "leatherleaf",
+      "foto": "leatherleaf.jpg",
+      "color": "#2F5D3A",
+      "nombres": [
+        {"label": "Nombre científico", "nombre": "Rumohra adiantiformis", "cientifico": true},
+        {"label": "En inglés", "nombre": "Leatherleaf fern"},
+        {"label": "En español", "nombre": "Helecho de cuero"},
+        {"label": "En el taller (PR)", "nombre": "Leather", "validar": true}
+      ],
+      "titulo": "El verde que está en casi todos los arreglos 🌿",
+      "hashtags": "#helecho #leatherleaf #follaje #floristeria"
+    },
+    {
+      "id": "G08",
+      "slug": "statice",
+      "foto": "statice.jpg",
+      "color": "#6A4FA3",
+      "nombres": [
+        {"label": "Nombre científico", "nombre": "Limonium sinuatum", "cientifico": true},
+        {"label": "En inglés", "nombre": "Statice · Sea lavender"},
+        {"label": "En español", "nombre": "Limonium"},
+        {"label": "También", "nombre": "Siempreviva", "validar": true},
+        {"label": "En el taller (PR)", "nombre": "Statice", "validar": true}
+      ],
+      "titulo": "La flor que se seca y sigue igual de bonita 💜",
+      "hashtags": "#statice #limonium #floresecas #floristeria"
+    },
+    {
+      "id": "G09",
+      "slug": "gladiola",
+      "foto": "gladiola.jpg",
+      "color": "#E85D4A",
+      "nombres": [
+        {"label": "Nombre científico", "nombre": "Gladiolus", "cientifico": true},
+        {"label": "En inglés", "nombre": "Gladiolus · Glads"},
+        {"label": "En España", "nombre": "Gladiolo"},
+        {"label": "En México y PR", "nombre": "Gladiola", "validar": true}
+      ],
+      "titulo": "¿Gladiolo o gladiola? Las dos están bien ⚔️",
+      "hashtags": "#gladiola #gladiolo #flores #floristeria"
+    },
+    {
+      "id": "G10",
+      "slug": "anturio",
+      "foto": "anturio.jpg",
+      "color": "#C8102E",
+      "nombres": [
+        {"label": "Nombre científico", "nombre": "Anthurium andraeanum", "cientifico": true},
+        {"label": "En inglés", "nombre": "Anthurium · Flamingo flower"},
+        {"label": "En español", "nombre": "Anturio"},
+        {"label": "También", "nombre": "Flor de flamenco", "validar": true}
+      ],
+      "titulo": "Parece de plástico, pero es de verdad ❤️",
+      "hashtags": "#anturio #anthurium #tropicales #flores"
+    },
+    {
+      "id": "G11",
+      "slug": "ave-del-paraiso",
+      "foto": "ave-del-paraiso.jpg",
+      "color": "#F28C28",
+      "nombres": [
+        {"label": "Nombre científico", "nombre": "Strelitzia reginae", "cientifico": true},
+        {"label": "En inglés", "nombre": "Bird of paradise"},
+        {"label": "En español", "nombre": "Ave del paraíso"},
+        {"label": "También", "nombre": "Estrelitzia"}
+      ],
+      "titulo": "Esta flor parece un pájaro, y por eso se llama así 🧡",
+      "hashtags": "#avedelparaiso #strelitzia #tropicales #flores"
+    },
+    {
+      "id": "G12",
+      "slug": "hypericum",
+      "foto": "hypericum.jpg",
+      "color": "#8E1B2C",
+      "nombres": [
+        {"label": "Nombre científico", "nombre": "Hypericum androsaemum", "cientifico": true},
+        {"label": "En inglés", "nombre": "Hypericum berries"},
+        {"label": "En español", "nombre": "Hipérico"},
+        {"label": "En el taller (PR)", "nombre": "Hypericum", "validar": true}
+      ],
+      "titulo": "Parecen frutas, pero no se comen 🔴",
+      "hashtags": "#hypericum #hiperico #navidad #floristeria"
+    }
+  ]
+}
